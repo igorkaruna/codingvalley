@@ -1,7 +1,6 @@
 import logging
 
-from django.contrib.auth.hashers import make_password
-from rest_framework import status, viewsets
+from rest_framework import status
 from rest_framework.generics import (CreateAPIView, RetrieveAPIView,
                                      UpdateAPIView)
 from rest_framework.permissions import AllowAny, IsAuthenticated

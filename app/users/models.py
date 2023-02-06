@@ -1,68 +1,36 @@
 import uuid
 
-from django.contrib.auth.models import AbstractUser, BaseUserManager
+from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.utils.translation import gettext as _
 
-from whatchlists.models import Movie, Series
-
-
-class UserManager(BaseUserManager):
-    def _create_user(self, username, email, password, is_active, is_staff, is_superuser, **extra_fields):
-        if not email:
-            raise ValueError('Users must have an email address')
-
-        email = self.normalize_email(email)
-        user = self.model(
-            username=username,
-            email=email,
-            is_active=is_active,
-            is_staff=is_staff,
-            is_superuser=is_superuser,
-            **extra_fields
-        )
-        user.set_password(password)
-        user.save(using=self._db)
-        return user
-
-    def create_user(self, username, email, password, **extra_fields):
-        user = self._create_user(
-            username, email, password,
-            True, False, False, **extra_fields
-        )
-        user.save(using=self._db)
-        return user
-
-    def create_superuser(self, username, email, password, **extra_fields):
-        user = self._create_user(
-            username, email, password,
-            True, True, True, **extra_fields
-        )
-        user.save(using=self._db)
-        return user
+from users.managers import UserManager
+from users.utils import generate_username
 
 
 class User(AbstractUser):
     id = models.UUIDField(default=uuid.uuid4, unique=True, primary_key=True)
-    username = models.CharField(max_length=50, unique=True)
-    email = models.EmailField(unique=True)
-    bio = models.TextField(null=True, blank=True)
+
+    first_name = models.CharField(max_length=100, null=True)
+    last_name = models.CharField(max_length=100, null=True)
+    username = models.CharField(
+        default=generate_username,
+        max_length=50,
+        unique=True
+    )
+    email = models.EmailField(verbose_name='email address', max_length=255, unique=True)
+    bio = models.TextField(default=None, null=True)
     date_joined = models.DateTimeField(auto_now_add=True)
     last_login = models.DateTimeField(auto_now=True)
-    is_active = models.BooleanField(default=True)
-    is_staff = models.BooleanField(default=False)
-    is_superuser = models.BooleanField(default=False)
+    email_verified = models.BooleanField(default=False)
+    is_admin = models.BooleanField(default=False)
 
-    first_name = None
-    last_name = None
-
-    favourite_movies = models.ManyToManyField(Movie, related_name="users", blank=True)
-    favourite_series = models.ManyToManyField(Series, related_name="users", blank=True)
+    favourites = models.ManyToManyField(Media, related_name="users", blank=True)
 
     objects = UserManager()
 
     USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['username']
+    REQUIRED_FIELDS = ['first_name', 'last_name']
 
     class Meta:
         verbose_name = _('User')
@@ -70,3 +38,9 @@ class User(AbstractUser):
 
     def get_username(self):
         return self.username
+
+    def get_fullname(self):
+        return f'{self.first_name} {self.last_name}'
+
+    def get_email(self):
+        return self.email

@@ -63,7 +63,7 @@ class RegisterSerializer(UserSerializer):
 
     class Meta:
         model = User
-        fields = ('email', 'username', 'refresh', 'access', 'password', 'password2')
+        fields = ('first_name', 'last_name', 'email', 'refresh', 'access', 'password', 'password2')
 
     def validate(self, attrs):
         if attrs['password'] != attrs['password2']:
@@ -73,7 +73,8 @@ class RegisterSerializer(UserSerializer):
 
     def create(self, validated_data):
         user = User.objects.create(
-            username=validated_data['username'],
+            first_name=validated_data['first_name'],
+            last_name=validated_data['last_name'],
             email=validated_data['email'],
         )
         user.set_password(validated_data['password'])
@@ -82,6 +83,8 @@ class RegisterSerializer(UserSerializer):
 
     def get_access(self, obj):
         token = RefreshToken.for_user(obj)
+        token['first_name'] = obj.first_name
+        token['last_name'] = obj.last_name
         token['username'] = obj.username
         token['email'] = obj.email
         return str(token.access_token)
