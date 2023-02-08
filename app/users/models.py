@@ -38,7 +38,9 @@ class User(AbstractUser):
 
 
 class UserProfile(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True)
+    user = models.OneToOneField(
+        User, related_name="userprofile", on_delete=models.CASCADE, primary_key=True
+    )
     bio = models.TextField(default=None, null=True, blank=True)
     followers = models.ManyToManyField(User, related_name="following", blank=True)
     favourites = models.ManyToManyField(Media, related_name="users", blank=True)

@@ -7,12 +7,26 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from users.models import User, UserProfile
+from whatchlists.serializers import MovieSerializer
 
 
 class UserSerializer(serializers.ModelSerializer):
+    profile = serializers.SerializerMethodField(read_only=True)
+
     class Meta:
         model = User
-        fields = ("id", "username", "email", "is_active")
+        fields = ("id", "first_name", "last_name", "username", "email", "profile")
+
+    def get_profile(self, obj):
+        profile = obj.userprofile
+        serializer = UserProfileSerializer(profile, many=False)
+        return serializer.data
+
+
+class UserProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserProfile
+        fields = ("bio", "followers", "favourites")
 
 
 class UserTokenObtainPairSerializer(TokenObtainPairSerializer):
@@ -103,8 +117,6 @@ class RegisterSerializer(UserSerializer):
 
     def get_access(self, obj):
         token = RefreshToken.for_user(obj)
-        token["first_name"] = obj.first_name
-        token["last_name"] = obj.last_name
         token["username"] = obj.username
         token["email"] = obj.email
         return str(token.access_token)
@@ -150,12 +162,6 @@ class ChangePasswordSerializer(serializers.ModelSerializer):
         instance.set_password(validated_data["new_password"])
         instance.save()
         return Response("Changed")
-
-
-class UserProfileSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = UserProfile
-        fields = ("user",)
 
 
 class UpdateProfileSerializer(serializers.ModelSerializer):

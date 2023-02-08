@@ -15,7 +15,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 from users.models import User
 from whatchlists.models import Media
 from notifications.models import Notification
-from users.serializers import (ChangePasswordSerializer, UserProfileSerializer,
+from users.serializers import (ChangePasswordSerializer, UserSerializer, UserProfileSerializer,
                                RegisterSerializer, UpdateProfileSerializer,
                                UserTokenObtainPairSerializer)
 
@@ -70,8 +70,7 @@ class LogoutAllView(APIView):
 
 
 class ProfileView(RetrieveAPIView):
-    permission_classes = [IsAuthenticated]
-    serializer_class = UserProfileSerializer
+    serializer_class = UserSerializer
 
     def get_object(self, **kwargs):
         return User.objects.get(username=self.kwargs['username'])
