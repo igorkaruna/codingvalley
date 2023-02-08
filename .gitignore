@@ -143,5 +143,6 @@ cython_debug/
 
 .idea/
 
-config/
+config/.env/
+config/db/
 settings_dev.py
