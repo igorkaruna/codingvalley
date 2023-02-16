@@ -23,7 +23,7 @@ urlpatterns = [
     path('account/change_password/', views.ChangePasswordView.as_view(), name='change_password'),
     # profile
     path('user/<str:username>/', views.ProfileView.as_view(), name='profile'),
-    path('user/<str:username>/follow/', views.FollowView.as_view(), name="follow_user"),
-    path('<str:uuid>/save/', views.FavouritesView.as_view(), name="favourites"),
+    path('user/<str:username>/follow/', views.FollowUserView.as_view(), name="follow_user"),
+    path('<str:uuid>/save/', views.AddFavouritesView.as_view(), name="favourites"),
     path('profile/edit/', views.UpdateProfileView.as_view(), name='update_profile'),
 ]

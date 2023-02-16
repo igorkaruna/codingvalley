@@ -5,7 +5,7 @@ from django.db import models
 from django.utils.translation import gettext as _
 
 from users.managers import UserManager
-from users.services.generate_username import generate_username
+from users.utils import generate_username
 from watchlists.models import Media
 
 
@@ -38,12 +38,10 @@ class User(AbstractUser):
 
 
 class UserProfile(models.Model):
-    user = models.OneToOneField(
-        User, related_name='userprofile', on_delete=models.CASCADE, primary_key=True
-    )
+    user = models.OneToOneField(User, related_name='userprofile', on_delete=models.CASCADE, primary_key=True)
     bio = models.TextField(default=None, null=True, blank=True)
-    followers = models.ManyToManyField(User, related_name='following', blank=True)
-    favourites = models.ManyToManyField(Media, related_name='users', blank=True)
+    followers = models.ManyToManyField(User, related_name='followers', blank=True)
+    favourites = models.ManyToManyField(Media, related_name='favourites', blank=True)
 
     class Meta:
         verbose_name = _('Profile')

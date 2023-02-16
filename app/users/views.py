@@ -23,7 +23,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 
 from users.managers import UserManager
 from users.models import User
-from users.services.create_notification import create_notification
+from notifications.utils import create_notification
 from users.serializers import (ChangePasswordSerializer, RegisterSerializer,
                                UpdateProfileSerializer, UserSerializer,
                                UserTokenObtainPairSerializer)
@@ -140,43 +140,79 @@ class ChangePasswordView(UpdateAPIView):
         return self.request.user
 
 
-class FollowView(APIView):
+class ProfileView(RetrieveAPIView):
+    serializer_class = UserSerializer
+
+    @method_decorator(vary_on_cookie)
+    @method_decorator(cache_page(60*60*1, key_prefix='to_userprofile_cache'))
+    def get(self, *args, **kwargs):
+        return super().get(*args, **kwargs)
+
+    def get_object(self, **kwargs):
+        return User.objects.get(username=self.kwargs['username'])
+
+
+class UpdateProfileView(UpdateAPIView):
+    queryset = User.objects.all()
+    permission_classes = [IsAuthenticated]
+    serializer_class = UpdateProfileSerializer
+
+    def get_object(self):
+        return self.request.user
+
+
+class ChangePasswordView(UpdateAPIView):
+    queryset = User.objects.all()
+    permission_classes = [IsAuthenticated]
+    serializer_class = ChangePasswordSerializer
+
+    def get_object(self):
+        return self.request.user
+
+
+class FollowUserView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, username):
         try:
-            if (user := request.user) == (user_to_follow := User.objects.get(username=username)):
+            user = request.user
+            to_user = User.objects.get(username=username)
+            if user == to_user:
                 return Response({'detail': 'You can’t follow yourself.'}, status=status.HTTP_400_BAD_REQUEST)
 
-            userprofile = user_to_follow.userprofile
-            if user in userprofile.followers.all():
-                userprofile.followers.remove(user)
-                userprofile.save()
-                return Response({'detail': f'You stop following {user_to_follow}'}, status=status.HTTP_204_NO_CONTENT)
+            to_userprofile = to_user.userprofile
+            if to_userprofile.followers.filter(username=user.username).exists():
+                to_userprofile.followers.remove(user)
+                to_userprofile.save()
+                return Response({'detail': f'You stop following {to_user}'}, status=status.HTTP_204_NO_CONTENT)
 
-            userprofile.followers.add(user)
-            userprofile.save()
-            create_notification(user_to_follow, user)
-            return Response({'detail': f'You start following {user_to_follow}'}, status=status.HTTP_200_OK)
+            to_userprofile.followers.add(user)
+            to_userprofile.save()
+            create_notification(
+                to_user=to_user,
+                created_by=user,
+                notification_type='follow',
+                content=f"{user.userprofile.user} started following you."
+            )
+            return Response({'detail': f'You start following {to_user}'}, status=status.HTTP_200_OK)
         except Exception as e:
             logger.error(f'FollowView: {e}')
             return Response({'detail': f'{e}'}, status=status.HTTP_400_BAD_REQUEST)
 
 
-class FavouritesView(APIView):
+class AddFavouritesView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, uuid):
         try:
             userprofile = request.user.userprofile
-            if (media := Media.objects.get(id=uuid)) in userprofile.favourites.all():
+            media = Media.objects.get(id=uuid)
+            if userprofile.favourites.filter(id=media.id).exists():
                 userprofile.favourites.remove(media)
-                userprofile.favourites_count = userprofile.favourites.count()
                 userprofile.save()
                 return Response({'detail': f'{media} was removed from favourites.'}, status=status.HTTP_204_NO_CONTENT)
 
             userprofile.favourites.add(media)
-            userprofile.favourites_count = userprofile.favourites.count()
             userprofile.save()
             return Response({'detail': f'{media} was added to favourites.'}, status=status.HTTP_200_OK)
         except Exception as e:
@@ -188,7 +224,8 @@ class SendEmailView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        if (user := request.user).email_verified:
+        user = request.user
+        if user.email_verified:
             return Response({'detail': 'Your email is already activated.'}, status=status.HTTP_403_FORBIDDEN)
         try:
             title = 'Verify your Valley account'
@@ -263,7 +300,9 @@ class ResetPasswordView(APIView):
             return Response({'detail': 'Something went wrong, please try again.'}, status=status.HTTP_406_NOT_ACCEPTABLE)
         if not default_token_generator.check_token(user, token):
             return Response({'detail': 'Something went wrong, please try again.'}, status=status.HTTP_406_NOT_ACCEPTABLE)
-        if (new_password := request.data.get('new_password')) != request.data.get('new_password2'):
+
+        new_password = request.data.get('new_password')
+        if new_password != request.data.get('new_password2'):
             return Response({'detail': 'Password doesn’t match'}, status=status.HTTP_406_NOT_ACCEPTABLE)
 
         user.set_password(new_password)

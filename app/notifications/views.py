@@ -11,7 +11,8 @@ class GetNotificationView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        if not (is_read := request.query_params.get('is_read')):
+        is_read = request.query_params.get('is_read')
+        if not is_read:
             notifications = request.user.notifications.order_by('-created')
         else:
             notifications = request.user.notifications.filter(is_read=is_read).order_by('-created')

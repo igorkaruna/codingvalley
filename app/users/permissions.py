@@ -1,24 +1,19 @@
 from rest_framework import permissions
 
 
-class IsOwnerOrIsAdminOrReadOnly(permissions.BasePermission):
+class IsOwner(permissions.BasePermission):
     """
-    Allows the object to be updated or deleted by object's owner or admin.
-    Other users can only read the object.
+    Custom permission to only allow object's owners to interact with it.
     """
 
     def has_permission(self, request, view):
-        if request.method in permissions.SAFE_METHODS:
-            return True
         return request.user
 
     def has_object_permission(self, request, view, obj):
-        if request.method in permissions.SAFE_METHODS:
-            return True
-        return obj.user == request.user or request.user.is_superuser
+        return obj.user == request.user
 
 
-class VerifiedEmail(IsOwnerOrIsAdminOrReadOnly):
+class EmailVerified(IsOwner):
+
     def has_permission(self, request, view):
-        """Object can be created only by user whose email was verified"""
-        return request.user.email_vierified
+        return request.user.email_verified

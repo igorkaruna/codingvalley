@@ -3,7 +3,7 @@
 from django.conf import settings
 from django.db import migrations, models
 import django.db.models.deletion
-from users.services.generate_username import generate_username
+from users.utils import generate_username
 import uuid
 
 
