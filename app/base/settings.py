@@ -21,10 +21,11 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
 
     # 3-rd party
-    'rest_framework',
-    'rest_framework_simplejwt.token_blacklist',
-    'debug_toolbar',
-    'corsheaders',
+    "rest_framework",
+    "rest_framework_simplejwt.token_blacklist",
+    "debug_toolbar",
+    "corsheaders",
+    'drf_yasg',
 
     # local
     'users.apps.UsersConfig',
